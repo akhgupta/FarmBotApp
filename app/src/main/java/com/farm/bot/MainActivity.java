@@ -22,6 +22,11 @@ import com.akhgupta.easylocation.EasyLocationRequestBuilder;
 import com.felhr.usbserial.UsbSerialDevice;
 import com.felhr.usbserial.UsbSerialInterface;
 import com.google.android.gms.location.LocationRequest;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -33,6 +38,7 @@ public class MainActivity extends EasyLocationAppCompatActivity {
     private static final String ACTION_USB_PERMISSION =
             "com.android.example.USB_PERMISSION";
     private UsbSerialDevice serialPort;
+    private DatabaseReference firebaseDatabase;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,6 +48,23 @@ public class MainActivity extends EasyLocationAppCompatActivity {
 
         setupUsb();
         requestLocation();
+        setupConnectionStatus();
+    }
+
+    private void setupConnectionStatus() {
+        firebaseDatabase = FirebaseDatabase.getInstance().getReference("robot/1/location");
+
+        firebaseDatabase.child("connection_status").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        })
     }
 
     private void requestLocation() {
@@ -55,6 +78,7 @@ public class MainActivity extends EasyLocationAppCompatActivity {
                 .setFallBackToLastLocationTime(3000)
                 .build();
         requestLocationUpdates(easyLocationRequest);
+
 
     }
 
@@ -145,7 +169,8 @@ public class MainActivity extends EasyLocationAppCompatActivity {
     public void onLocationReceived(Location location) {
         if(location!=null)
         Log.d(TAG,location.getLatitude()+","+location.getLongitude());
-
+        firebaseDatabase.child("location/lat").setValue(location.getLatitude());
+        firebaseDatabase.child("location/long").setValue(location.getLongitude());
     }
 
     @Override
