@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
@@ -67,17 +68,24 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity implements 
         setupUsb();
         setupConnectionStatus();
     }
-
     @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        EventBus.getInstance().getBus().unregister(this);
+    protected void onStart() {
+        super.onStart();
+        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+        registerReceiver(mUsbReceiver, filter);
     }
 
     @Override
     protected void onStop() {
         super.onStop();
         removeVideoViews();
+        unregisterReceiver(mUsbReceiver);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        EventBus.getInstance().getBus().unregister(this);
     }
 
     @Subscribe
@@ -114,6 +122,7 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity implements 
             }
         });
     }
+
 
     @Override
     public void onLocationPermissionGranted() {
