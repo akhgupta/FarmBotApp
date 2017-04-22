@@ -18,10 +18,7 @@ import android.widget.TextView;
 
 import com.akhgupta.easylocation.EasyLocationAppCompatActivity;
 import com.akhgupta.easylocation.EasyLocationRequest;
-import com.akhgupta.easylocation.EasyLocationRequestBuilder;
 import com.felhr.usbserial.UsbSerialDevice;
-import com.felhr.usbserial.UsbSerialInterface;
-import com.google.android.gms.location.LocationRequest;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -46,10 +43,10 @@ public class MainActivity extends EasyLocationAppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         usbManager = (UsbManager) getApplicationContext().getSystemService(USB_SERVICE);
-
         setupUsb();
-        requestLocation();
         setupConnectionStatus();
+        EasyLocationRequest easyLocationRequest = LocationUtil.requestLocation();
+        requestLocationUpdates(easyLocationRequest);
     }
 
     private void setupConnectionStatus() {
@@ -60,7 +57,7 @@ public class MainActivity extends EasyLocationAppCompatActivity {
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot != null) {
                     boolean value = (boolean) dataSnapshot.getValue();
-                    helpText.setText("connection status :"+value);
+                    helpText.setText("connection status :" + value);
                     if (value) {
                         Intent intent = new Intent(getApplicationContext(), LiveVideoActivity.class);
                         startActivity(intent);
@@ -75,19 +72,6 @@ public class MainActivity extends EasyLocationAppCompatActivity {
         });
     }
 
-    private void requestLocation() {
-        LocationRequest locationRequest = new LocationRequest()
-                .setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY)
-                .setInterval(5000)
-                .setFastestInterval(5000);
-
-        EasyLocationRequest easyLocationRequest = new EasyLocationRequestBuilder()
-                .setLocationRequest(locationRequest)
-                .setFallBackToLastLocationTime(3000)
-                .build();
-        requestLocationUpdates(easyLocationRequest);
-    }
-
     private void setupUsb() {
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
         HashMap<String, UsbDevice> deviceList = manager.getDeviceList();
@@ -100,7 +84,6 @@ public class MainActivity extends EasyLocationAppCompatActivity {
             PendingIntent mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
             manager.requestPermission(device, mPermissionIntent);
             break;
-            //your code
         }
         helpText = ((TextView) findViewById(R.id.helpText));
         helpText.setText(stringBuilder.toString());
@@ -122,42 +105,26 @@ public class MainActivity extends EasyLocationAppCompatActivity {
     }
 
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
-
         @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
-                    UsbDevice device = (UsbDevice) intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
+                    UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
 
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                         if (device != null) {
                             UsbDeviceConnection connection = usbManager.openDevice(device);
-
-
-                            connection = usbManager.openDevice(device);
                             serialPort = UsbSerialDevice.createUsbSerialDevice(device, connection);
                             if (serialPort != null) {
-                                if (serialPort.open()) { //Set Serial Connection Parameters.
-                                    serialPort.setBaudRate(9600);
-                                    serialPort.setDataBits(UsbSerialInterface.DATA_BITS_8);
-                                    serialPort.setStopBits(UsbSerialInterface.STOP_BITS_1);
-                                    serialPort.setParity(UsbSerialInterface.PARITY_NONE);
-                                    serialPort.setFlowControl(UsbSerialInterface.FLOW_CONTROL_OFF);
-//                                    serialPort.read(mCallback); //
-                                    Log.d(TAG, "Serial Connection Opened!\n");
-                                    String string = "w";
-                                    serialPort.write(string.getBytes());
-
-
+                                if (serialPort.open()) {
+                                    serialPort = UsbUtil.setupSerial(serialPort);
                                 } else {
                                     Log.d("SERIAL", "PORT NOT OPEN");
                                 }
                             } else {
                                 Log.d("SERIAL", "PORT IS NULL");
                             }
-
-                            //call method to set up device communication
                         }
                     }
                 }
@@ -186,8 +153,8 @@ public class MainActivity extends EasyLocationAppCompatActivity {
 
     @Override
     public void onLocationReceived(Location location) {
-        if(location!=null)
-        Log.d(TAG,location.getLatitude()+","+location.getLongitude());
+        if (location != null)
+            Log.d(TAG, location.getLatitude() + "," + location.getLongitude());
         firebaseDatabase.child("location/lat").setValue(location.getLatitude());
         firebaseDatabase.child("location/long").setValue(location.getLongitude());
     }
