@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white"
+    tools:context="com.farm.bot.MainActivity">
+<TextView
+    android:padding="16dp"
+    android:text="Scan Below QR code on FarmBoat app.."
+    android:gravity="center"
+    android:id="@+id/helpText"
+    android:textAppearance="@style/Base.TextAppearance.AppCompat.Medium"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" />
+<ImageView
+    android:src="@drawable/static_qr_code_without_logo"
+    android:layout_marginTop="100dp"
+    android:layout_gravity="center_horizontal"
+    android:id="@+id/qrcodeImageView"
+    android:layout_width="300dp"
+    android:layout_height="300dp" />
+</FrameLayout>
