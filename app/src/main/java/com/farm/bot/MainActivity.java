@@ -64,7 +64,7 @@ public class MainActivity extends EasyLocationAppCompatActivity {
             public void onCancelled(DatabaseError databaseError) {
 
             }
-        })
+        });
     }
 
     private void requestLocation() {
