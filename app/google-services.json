@@ -1,0 +1,45 @@
+{
+  "project_info": {
+    "project_number": "661893884872",
+    "firebase_url": "https://chrome-cipher-124607.firebaseio.com",
+    "project_id": "chrome-cipher-124607",
+    "storage_bucket": "chrome-cipher-124607.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:661893884872:android:f820b6e049377528",
+        "android_client_info": {
+          "package_name": "com.farm.bot"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "661893884872-ir3qkv4s0biq7devkqjk228la7d83giv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDPqMNJ4epnX_0KuWI61OblFHNWJpSiF0"
+        },
+        {
+          "current_key": "AIzaSyAqTaPoiYL9XK3AgkOxa2_t62Gov1d3feM"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
