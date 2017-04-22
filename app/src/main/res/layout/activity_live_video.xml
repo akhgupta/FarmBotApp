@@ -6,16 +6,17 @@
     android:layout_height="match_parent"
     tools:context="com.farm.bot.LiveVideoActivity">
     <ImageView
+        android:layout_margin="5dp"
         android:id="@+id/disconnectButton"
         android:layout_gravity="bottom|left"
         android:src="@mipmap/ic_power_on"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
     <ImageView
+        android:layout_margin="5dp"
         android:id="@+id/stopButton"
         android:layout_gravity="bottom|right"
-        android:src="@drawable/ic_stop_black_24dp"
-        android:tint="@android:color/holo_red_dark"
+        android:src="@mipmap/ic_stop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
 </FrameLayout>
