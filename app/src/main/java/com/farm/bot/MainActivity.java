@@ -39,6 +39,7 @@ public class MainActivity extends EasyLocationAppCompatActivity {
             "com.android.example.USB_PERMISSION";
     private UsbSerialDevice serialPort;
     private DatabaseReference firebaseDatabase;
+    private TextView helpText;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,12 +53,19 @@ public class MainActivity extends EasyLocationAppCompatActivity {
     }
 
     private void setupConnectionStatus() {
-        firebaseDatabase = FirebaseDatabase.getInstance().getReference("robot/1/location");
+        firebaseDatabase = FirebaseDatabase.getInstance().getReference("robot/1");
 
         firebaseDatabase.child("connection_status").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-
+                if (dataSnapshot != null) {
+                    boolean value = (boolean) dataSnapshot.getValue();
+                    helpText.setText("connection status :"+value);
+                    if (value) {
+                        Intent intent = new Intent(getApplicationContext(), LiveVideoActivity.class);
+                        startActivity(intent);
+                    }
+                }
             }
 
             @Override
@@ -78,8 +86,6 @@ public class MainActivity extends EasyLocationAppCompatActivity {
                 .setFallBackToLastLocationTime(3000)
                 .build();
         requestLocationUpdates(easyLocationRequest);
-
-
     }
 
     private void setupUsb() {
@@ -96,7 +102,8 @@ public class MainActivity extends EasyLocationAppCompatActivity {
             break;
             //your code
         }
-        ((TextView) findViewById(R.id.helpText)).setText(stringBuilder.toString());
+        helpText = ((TextView) findViewById(R.id.helpText));
+        helpText.setText(stringBuilder.toString());
 
     }
 
@@ -111,6 +118,7 @@ public class MainActivity extends EasyLocationAppCompatActivity {
     protected void onStop() {
         super.onStop();
         unregisterReceiver(mUsbReceiver);
+
     }
 
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
