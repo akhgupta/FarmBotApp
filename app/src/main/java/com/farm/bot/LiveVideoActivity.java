@@ -2,17 +2,22 @@ package com.farm.bot;
 
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
+import android.provider.Settings;
 import android.support.annotation.RequiresApi;
 import android.util.Log;
+import android.widget.LinearLayout;
 
 import com.akhgupta.easylocation.EasyLocationAppCompatActivity;
 import com.akhgupta.easylocation.EasyLocationRequest;
@@ -22,11 +27,22 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.sinch.android.rtc.ClientRegistration;
+import com.sinch.android.rtc.PushPair;
+import com.sinch.android.rtc.SinchClient;
+import com.sinch.android.rtc.SinchClientListener;
+import com.sinch.android.rtc.SinchError;
+import com.sinch.android.rtc.calling.Call;
+import com.sinch.android.rtc.calling.CallEndCause;
+import com.sinch.android.rtc.video.VideoCallListener;
+import com.sinch.android.rtc.video.VideoController;
+import com.squareup.otto.Subscribe;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
-public class LiveVideoActivity extends EasyLocationAppCompatActivity {
+public class LiveVideoActivity extends EasyLocationAppCompatActivity implements SinchClientListener, ServiceConnection {
 
     private static final String TAG = LiveVideoActivity.class.getSimpleName();
     private UsbManager usbManager;
@@ -34,16 +50,57 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
     private UsbSerialDevice serialPort;
     private DatabaseReference robotFirebaseDatabase;
     private DatabaseReference controllerFirebaseController;
+    private SinchService.SinchServiceInterface mSinchServiceInterface;
+    private boolean mRemoteVideoViewAdded = false;
+    private String mCallId;
+    private boolean mAddedListener;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EventBus.getInstance().getBus().register(this);
         setContentView(R.layout.activity_live_video);
+        getApplicationContext().bindService(new Intent(this, SinchService.class), this,
+                BIND_AUTO_CREATE);
+
         EasyLocationRequest easyLocationRequest = LocationUtil.requestLocation();
         requestLocationUpdates(easyLocationRequest);
         usbManager = (UsbManager) getApplicationContext().getSystemService(USB_SERVICE);
         setupUsb();
         setupController();
+    }
+    @Override
+    protected void onStart() {
+        super.onStart();
+        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+        registerReceiver(mUsbReceiver, filter);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        removeVideoViews();
+        unregisterReceiver(mUsbReceiver);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        EventBus.getInstance().getBus().unregister(this);
+    }
+
+    @Subscribe
+    public void onIncomingCall(InComingCallEvent inComingCallEvent) {
+        mCallId = inComingCallEvent.getCallId();
+        Call call = getSinchServiceInterface().getCall(mCallId);
+        if (call != null) {
+            if (!mAddedListener) {
+                call.addCallListener(new SinchCallListener());
+                mAddedListener = true;
+            }
+        } else {
+            Log.e(TAG, "Started with invalid callId, aborting.");
+        }
     }
 
     private void setupController() {
@@ -86,19 +143,6 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-        registerReceiver(mUsbReceiver, filter);
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-        unregisterReceiver(mUsbReceiver);
-    }
-
-    @Override
     public void onLocationPermissionGranted() {
 
     }
@@ -110,7 +154,7 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
 
     @Override
     public void onLocationReceived(Location location) {
-        if (location != null){
+        if (location != null) {
             Log.d(TAG, location.getLatitude() + "," + location.getLongitude());
             robotFirebaseDatabase.child("location/lat").setValue(location.getLatitude());
             robotFirebaseDatabase.child("location/long").setValue(location.getLongitude());
@@ -140,7 +184,6 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
             manager.requestPermission(device, mPermissionIntent);
             break;
         }
-
     }
 
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
@@ -167,4 +210,134 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
             }
         }
     };
+
+    private String getID() {
+        return Settings.Secure.getString(this.getContentResolver(), Settings.Secure.ANDROID_ID);
+    }
+
+    @Override
+    public void onClientStarted(SinchClient sinchClient) {
+
+    }
+
+    @Override
+    public void onClientStopped(SinchClient sinchClient) {
+
+    }
+
+    @Override
+    public void onClientFailed(SinchClient sinchClient, SinchError sinchError) {
+
+    }
+
+    @Override
+    public void onRegistrationCredentialsRequired(SinchClient sinchClient, ClientRegistration clientRegistration) {
+
+    }
+
+    @Override
+    public void onLogMessage(int i, String s, String s1) {
+
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+        if (SinchService.class.getName().equals(componentName.getClassName())) {
+            mSinchServiceInterface = (SinchService.SinchServiceInterface) iBinder;
+        }
+        if (!mSinchServiceInterface.isStarted())
+            mSinchServiceInterface.startClient("robotapp");
+
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName componentName) {
+        if (SinchService.class.getName().equals(componentName.getClassName())) {
+            mSinchServiceInterface = null;
+        }
+    }
+
+    protected SinchService.SinchServiceInterface getSinchServiceInterface() {
+        return mSinchServiceInterface;
+    }
+
+    private void addRemoteView() {
+        if (mRemoteVideoViewAdded || getSinchServiceInterface() == null) {
+            return; //early
+        }
+        final VideoController vc = getSinchServiceInterface().getVideoController();
+        if (vc != null) {
+            LinearLayout view = (LinearLayout) findViewById(R.id.remoteVideo);
+            view.addView(vc.getRemoteView());
+            mRemoteVideoViewAdded = true;
+        }
+    }
+
+
+    private void removeVideoViews() {
+        if (getSinchServiceInterface() == null) {
+            return; // early
+        }
+
+        VideoController vc = getSinchServiceInterface().getVideoController();
+        if (vc != null) {
+            LinearLayout view = (LinearLayout) findViewById(R.id.remoteVideo);
+            view.removeView(vc.getRemoteView());
+            mRemoteVideoViewAdded = false;
+        }
+    }
+
+    private void endCall() {
+        Call call = getSinchServiceInterface().getCall(mCallId);
+        if (call != null) {
+            call.hangup();
+        }
+        finish();
+    }
+
+
+    private class SinchCallListener implements VideoCallListener {
+
+        @Override
+        public void onCallEnded(Call call) {
+            CallEndCause cause = call.getDetails().getEndCause();
+            Log.d(TAG, "Call ended. Reason: " + cause.toString());
+            String endMsg = "Call ended: " + call.getDetails().toString();
+            endCall();
+        }
+
+        @Override
+        public void onShouldSendPushNotification(Call call, List<PushPair> list) {
+
+        }
+
+        @Override
+        public void onCallEstablished(Call call) {
+            Log.d(TAG, "Call established");
+            Log.d(TAG, "Call offered video: " + call.getDetails().isVideoOffered());
+        }
+
+        @Override
+        public void onCallProgressing(Call call) {
+            Log.d(TAG, "Call progressing");
+        }
+
+        @Override
+        public void onVideoTrackAdded(Call call) {
+            Log.d(TAG, "Video track added");
+            addRemoteView();
+        }
+
+        @Override
+        public void onVideoTrackPaused(Call call) {
+
+        }
+
+        @Override
+        public void onVideoTrackResumed(Call call) {
+
+        }
+    }
+
+
 }
