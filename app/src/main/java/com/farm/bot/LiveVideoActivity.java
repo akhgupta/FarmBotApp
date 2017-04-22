@@ -32,7 +32,8 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
     private UsbManager usbManager;
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
     private UsbSerialDevice serialPort;
-    private DatabaseReference firebaseDatabase;
+    private DatabaseReference robotFirebaseDatabase;
+    private DatabaseReference controllerFirebaseController;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,13 +43,13 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
         requestLocationUpdates(easyLocationRequest);
         usbManager = (UsbManager) getApplicationContext().getSystemService(USB_SERVICE);
         setupUsb();
-        setupConnectionStatus();
+        setupController();
     }
 
-    private void setupConnectionStatus() {
-        firebaseDatabase = FirebaseDatabase.getInstance().getReference("robot/1");
+    private void setupController() {
+        robotFirebaseDatabase = FirebaseDatabase.getInstance().getReference("robot/1");
 
-        firebaseDatabase.child("connection_status").addValueEventListener(new ValueEventListener() {
+        robotFirebaseDatabase.child("connection_status").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot != null) {
@@ -64,6 +65,24 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
 
             }
         });
+
+        controllerFirebaseController = FirebaseDatabase.getInstance().getReference("controller/1");
+
+        controllerFirebaseController.child("direction").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (serialPort != null) {
+                    String direction = (String) dataSnapshot.getValue();
+                    serialPort.write(direction.getBytes());
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
     }
 
     @Override
@@ -77,7 +96,6 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
     protected void onStop() {
         super.onStop();
         unregisterReceiver(mUsbReceiver);
-
     }
 
     @Override
@@ -94,8 +112,8 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
     public void onLocationReceived(Location location) {
         if (location != null){
             Log.d(TAG, location.getLatitude() + "," + location.getLongitude());
-            firebaseDatabase.child("location/lat").setValue(location.getLatitude());
-            firebaseDatabase.child("location/long").setValue(location.getLongitude());
+            robotFirebaseDatabase.child("location/lat").setValue(location.getLatitude());
+            robotFirebaseDatabase.child("location/long").setValue(location.getLongitude());
         }
     }
 
@@ -132,8 +150,6 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
             if (ACTION_USB_PERMISSION.equals(action)) {
                 synchronized (this) {
                     UsbDevice device = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE);
-
-                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                         if (device != null) {
                             UsbDeviceConnection connection = usbManager.openDevice(device);
                             serialPort = UsbSerialDevice.createUsbSerialDevice(device, connection);
@@ -147,7 +163,6 @@ public class LiveVideoActivity extends EasyLocationAppCompatActivity {
                                 Log.d("SERIAL", "PORT IS NULL");
                             }
                         }
-                    }
                 }
             }
         }

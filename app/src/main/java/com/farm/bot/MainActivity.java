@@ -133,12 +133,7 @@ public class MainActivity extends EasyLocationAppCompatActivity {
     };
 
     public void onClickTest(View view) {
-        if (serialPort != null) {
-            serialPort.write("w".getBytes());
-            serialPort.write("a".getBytes());
-            serialPort.write("s".getBytes());
-            serialPort.write("d".getBytes());
-        }
+
     }
 
     @Override
