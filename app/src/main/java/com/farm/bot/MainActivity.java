@@ -68,14 +68,25 @@ public class MainActivity extends EasyLocationAppCompatActivity {
             Log.d(TAG, device.getDeviceName());
             stringBuilder.append(device.getDeviceName() + "\n");
             PendingIntent mPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
-            IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-            registerReceiver(mUsbReceiver, filter);
             manager.requestPermission(device, mPermissionIntent);
             break;
             //your code
         }
         ((TextView) findViewById(R.id.helpText)).setText(stringBuilder.toString());
 
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
+        registerReceiver(mUsbReceiver, filter);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unregisterReceiver(mUsbReceiver);
     }
 
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
@@ -102,8 +113,8 @@ public class MainActivity extends EasyLocationAppCompatActivity {
                                     serialPort.setParity(UsbSerialInterface.PARITY_NONE);
                                     serialPort.setFlowControl(UsbSerialInterface.FLOW_CONTROL_OFF);
 //                                    serialPort.read(mCallback); //
-                                    Log.d(TAG,"Serial Connection Opened!\n");
-                                    String string="w";
+                                    Log.d(TAG, "Serial Connection Opened!\n");
+                                    String string = "w";
                                     serialPort.write(string.getBytes());
 
 
@@ -143,9 +154,8 @@ public class MainActivity extends EasyLocationAppCompatActivity {
 
     @Override
     public void onLocationReceived(Location location) {
-        if(location!=null)
-        Log.d(TAG,location.getLatitude()+","+location.getLongitude());
-
+        if (location != null)
+            Log.d(TAG, location.getLatitude() + "," + location.getLongitude());
     }
 
     @Override
