@@ -3,29 +3,35 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:background="@android:color/white"
     tools:context="com.farm.bot.MainActivity">
 
     <TextView
-    android:padding="16dp"
-    android:text="Scan Below QR code on FarmBoat app.."
-    android:gravity="center"
-    android:id="@+id/helpText"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content" />
+        android:id="@+id/helpText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="16dp"
+        android:text="Scan Below QR code on FarmBoat app.." />
 
     <ImageView
-    android:src="@drawable/static_qr_code_without_logo"
-    android:layout_marginTop="100dp"
-    android:layout_gravity="center_horizontal"
-    android:id="@+id/qrcodeImageView"
-    android:layout_width="300dp"
-    android:layout_height="300dp" />
-    <Button
+        android:id="@+id/qrcodeImageView"
+        android:layout_width="300dp"
+        android:layout_height="300dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="100dp"
+        android:src="@drawable/static_qr_code_without_logo" />
+
+    <com.airbnb.lottie.LottieAnimationView
+        android:id="@+id/animation_view"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:onClick="onClickTest"
-        android:text="test"/>
+        android:layout_gravity="center_horizontal"
+        app:lottie_fileName="robot_animation.json"
+        app:lottie_loop="true"
+        app:lottie_autoPlay="true"
+        android:visibility="gone"/>
 
     <LinearLayout
         android:id="@+id/remoteVideo"

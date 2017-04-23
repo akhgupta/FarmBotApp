@@ -57,20 +57,25 @@ public class MainActivity extends EasyLocationAppCompatActivity implements Sinch
     private String mCallId;
     private boolean mAddedListener;
     private DatabaseReference controllerDatabase;
+    private View qrCode;
+    private View animation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
         usbManager = (UsbManager) getApplicationContext().getSystemService(USB_SERVICE);
         EventBus.getInstance().getBus().register(this);
         getApplicationContext().bindService(new Intent(this, SinchService.class), this,
                 BIND_AUTO_CREATE);
-
+        registerReceiver(mUsbReceiver, filter);
         setupUsb();
         setupConnectionStatus();
         EasyLocationRequest easyLocationRequest = LocationUtil.requestLocation();
         requestLocationUpdates(easyLocationRequest);
+        animation = findViewById(R.id.animation_view);
+        qrCode = findViewById(R.id.qrcodeImageView);
     }
 
     private void setupConnectionStatus() {
@@ -96,6 +101,8 @@ public class MainActivity extends EasyLocationAppCompatActivity implements Sinch
     }
 
     private void obeyController() {
+        qrCode.setVisibility(View.GONE);
+        animation.setVisibility(View.VISIBLE);
         controllerDatabase.child("direction").addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
@@ -104,6 +111,23 @@ public class MainActivity extends EasyLocationAppCompatActivity implements Sinch
                     serialPort.write(direction.getBytes());
                 }
             }
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+
+        controllerDatabase.child("spray").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if (dataSnapshot != null) {
+                    boolean value = (boolean) dataSnapshot.getValue();
+                    if (value && serialPort != null){
+                        serialPort.write("y".getBytes());
+                    };
+                }
+            }
+
             @Override
             public void onCancelled(DatabaseError databaseError) {
 
@@ -130,8 +154,6 @@ public class MainActivity extends EasyLocationAppCompatActivity implements Sinch
     @Override
     protected void onStart() {
         super.onStart();
-        IntentFilter filter = new IntentFilter(ACTION_USB_PERMISSION);
-        registerReceiver(mUsbReceiver, filter);
     }
 
     @Override
