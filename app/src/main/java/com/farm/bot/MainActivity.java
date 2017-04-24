@@ -305,18 +305,6 @@ public class MainActivity extends EasyLocationAppCompatActivity implements Sinch
         return mSinchServiceInterface;
     }
 
-    private void addRemoteView() {
-        /*if (mRemoteVideoViewAdded || getSinchServiceInterface() == null) {
-            return; //early
-        }
-        final VideoController vc = getSinchServiceInterface().getVideoController();
-        if (vc != null) {
-            LinearLayout view = (LinearLayout) findViewById(R.id.remoteVideo);
-            view.addView(vc.getRemoteView());
-            mRemoteVideoViewAdded = true;
-        }*/
-    }
-
     private void endCall() {
         Call call = getSinchServiceInterface().getCall(mCallId);
         if (call != null) {
@@ -366,6 +354,18 @@ public class MainActivity extends EasyLocationAppCompatActivity implements Sinch
         @Override
         public void onVideoTrackResumed(Call call) {
 
+        }
+
+        private void addRemoteView() {
+            if (mRemoteVideoViewAdded || getSinchServiceInterface() == null) {
+                return; //early
+            }
+            final VideoController vc = getSinchServiceInterface().getVideoController();
+            if (vc != null) {
+                LinearLayout view = (LinearLayout) findViewById(R.id.remoteVideo);
+                view.addView(vc.getRemoteView());
+                mRemoteVideoViewAdded = true;
+            }
         }
     }
 
